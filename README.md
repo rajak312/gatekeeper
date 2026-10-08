@@ -82,7 +82,7 @@ flowchart LR
     subgraph Vercel["Vercel - gatekeeper-lalit.vercel.app"]
       NEXT["Next.js 16<br/>App Router + rewrites"]
     end
-    subgraph Render["Render - gatekeeper-api.onrender.com"]
+    subgraph Render["Render - gatekeeper-api-iqts.onrender.com"]
       API["NestJS 11 identity provider<br/>/oauth/* · /.well-known/* · /api/*"]
     end
     DB[("PostgreSQL (Neon)<br/>users · clients · grants · keys · audit")]
@@ -226,7 +226,7 @@ curl -s -u acme-reports:gks_demo_acme_reports_secret_change_me \
 
 | Variable                 | Required | Description |
 | ------------------------ | -------- | ----------- |
-| `API_INTERNAL_URL`       | ✅ | Where Next.js proxies protocol/API routes, e.g. `https://gatekeeper-api.onrender.com`. **Read at build time** (rewrites are compiled). |
+| `API_INTERNAL_URL`       | ✅ | Where Next.js proxies protocol/API routes, e.g. `https://gatekeeper-api-iqts.onrender.com`. **Read at build time** (rewrites are compiled). |
 | `NEXT_PUBLIC_GITHUB_URL` |    | Repository link in the header. |
 | `NEXT_PUBLIC_HIDE_DEMO_CREDENTIALS` | | `true` hides the demo-account shortcuts on the login page. |
 
@@ -250,7 +250,7 @@ CI (`.github/workflows/ci.yml`) runs install → generate → lint → format ch
 
 1. **Neon** - create a project/database. Copy the **pooled** connection string (host contains `-pooler`) and the **direct** one, both with `?sslmode=require`.
 2. **Render (API)** - *New → Blueprint* from this repo; `render.yaml` defines a free `gatekeeper-api` web service in Oregon that builds from the monorepo root, runs `prisma migrate deploy` on start and health-checks `/health`. Set the `sync: false` secrets: `DATABASE_URL` (pooled), `DIRECT_URL` (direct) and `KEY_ENCRYPTION_SECRET` (`openssl rand -base64 48`). `ISSUER_URL`/`WEB_URL` default to `https://gatekeeper-lalit.vercel.app` - change them if your Vercel URL differs. First boot seeds the demo data.
-3. **Vercel (web)** - import the repo, set **Root Directory = `apps/web`** (the `vercel.json` there installs and builds from the monorepo root) and add `API_INTERNAL_URL=https://gatekeeper-api.onrender.com`. Deploy.
+3. **Vercel (web)** - import the repo, set **Root Directory = `apps/web`** (the `vercel.json` there installs and builds from the monorepo root) and add `API_INTERNAL_URL=https://gatekeeper-api-iqts.onrender.com`. Deploy.
 4. Open `https://gatekeeper-lalit.vercel.app/.well-known/openid-configuration` - the issuer must equal the Vercel origin - then run the playground flow.
 
 ## Known limitations

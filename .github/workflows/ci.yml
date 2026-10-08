@@ -63,5 +63,5 @@ jobs:
 
       - name: Build
         env:
-          API_INTERNAL_URL: https://gatekeeper-api.onrender.com
+          API_INTERNAL_URL: https://gatekeeper-api-iqts.onrender.com
         run: npm run build
