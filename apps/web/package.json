@@ -1,0 +1,38 @@
+{
+  "name": "@gatekeeper/web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 3500",
+    "build": "next build",
+    "start": "next start --port 3500",
+    "typegen": "next typegen",
+    "typecheck": "next typegen && tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^24.19.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "eslint-config-next": "^16.4.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.11"
+  },
+  "dependencies": {
+    "@gatekeeper/shared": "^1.0.0",
+    "clsx": "^2.1.1",
+    "geist": "^1.7.2",
+    "jose": "^6.2.12",
+    "lucide-react": "^1.52.0",
+    "next": "^16.4.0",
+    "next-themes": "^0.4.6",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "swr": "^2.5.1",
+    "tailwind-merge": "^3.7.0",
+    "zod": "^4.6.5"
+  }
+}

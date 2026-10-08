@@ -1,0 +1,140 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-brand-50: #eef2ff;
+  --color-brand-100: #e0e7ff;
+  --color-brand-200: #c7d2fe;
+  --color-brand-300: #a5b4fc;
+  --color-brand-400: #818cf8;
+  --color-brand-500: #6366f1;
+  --color-brand-600: #4f46e5;
+  --color-brand-700: #4338ca;
+  --color-brand-800: #3730a3;
+  --color-brand-900: #312e81;
+  --color-brand-950: #1e1b4b;
+
+  --animate-fade-in: fade-in 0.25s ease-out both;
+  --animate-slide-up: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Semantic surface tokens; dark values are chosen, not inverted. */
+:root {
+  --bg: #fafafa;
+  --surface: #ffffff;
+  --surface-2: #f4f4f5;
+  --border: #e4e4e7;
+  --border-strong: #d4d4d8;
+  --fg: #09090b;
+  --muted: #52525b;
+  --subtle: #71717a;
+  --ring: #6366f1;
+  --chart-success: #2a78d6;
+  --chart-failure: #e34948;
+  --chart-grid: #e4e4e7;
+  color-scheme: light;
+}
+
+.dark {
+  --bg: #09090b;
+  --surface: #111113;
+  --surface-2: #18181b;
+  --border: #27272a;
+  --border-strong: #3f3f46;
+  --fg: #fafafa;
+  --muted: #a1a1aa;
+  --subtle: #8b8b94;
+  --ring: #818cf8;
+  --chart-success: #3987e5;
+  --chart-failure: #e66767;
+  --chart-grid: #27272a;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+  --color-ring: var(--ring);
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-feature-settings: 'cv11', 'ss01';
+  }
+  * {
+    border-color: var(--border);
+  }
+  ::selection {
+    background: color-mix(in oklab, var(--color-brand-500) 30%, transparent);
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+/* Subtle dotted grid used behind auth pages and the landing hero. */
+.bg-grid {
+  background-image: radial-gradient(color-mix(in oklab, var(--fg) 9%, transparent) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+.json-key {
+  color: #7c3aed;
+}
+.json-string {
+  color: #059669;
+}
+.json-number {
+  color: #d97706;
+}
+.json-bool {
+  color: #2563eb;
+}
+.dark .json-key {
+  color: #c4b5fd;
+}
+.dark .json-string {
+  color: #6ee7b7;
+}
+.dark .json-number {
+  color: #fcd34d;
+}
+.dark .json-bool {
+  color: #93c5fd;
+}

@@ -1,0 +1,54 @@
+{
+  "name": "gatekeeper",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Gatekeeper \u2014 an OAuth 2.1 / OpenID Connect identity provider built with NestJS and Next.js",
+  "license": "MIT",
+  "author": "Lalit Rajak (https://github.com/rajak312)",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22.12"
+  },
+  "allowScripts": {
+    "@prisma/engines@7.10.0": true,
+    "prisma@7.10.0": true,
+    "@swc/core@1.16.13": true,
+    "esbuild@0.28.2": true,
+    "@scarf/scarf": false,
+    "unrs-resolver@1.12.2": true
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.9",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.71.1"
+  },
+  "scripts": {
+    "dev:api": "npm run dev -w @gatekeeper/api",
+    "dev:web": "npm run dev -w @gatekeeper/web",
+    "db:up": "docker compose up -d postgres",
+    "db:migrate": "npm run db:migrate -w @gatekeeper/api",
+    "db:seed": "npm run db:seed -w @gatekeeper/api",
+    "build:shared": "npm run build -w @gatekeeper/shared",
+    "generate": "npm run build:shared && npm run prisma:generate -w @gatekeeper/api && npm run typegen -w @gatekeeper/web",
+    "build": "npm run generate && npm run build -w @gatekeeper/api && npm run build -w @gatekeeper/web",
+    "typecheck": "npm run generate && npm run typecheck -w @gatekeeper/shared -w @gatekeeper/api -w @gatekeeper/web",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "npm run test -w @gatekeeper/api && npm run test -w @gatekeeper/web",
+    "test:e2e": "npm run test:e2e -w @gatekeeper/api"
+  },
+  "overrides": {
+    "@nestjs/swagger": {
+      "js-yaml": "^5.4.3"
+    },
+    "mysql2": "^3.24.5"
+  }
+}

@@ -1,0 +1,315 @@
+// Gatekeeper data model.
+// Secrets (passwords, session tokens, refresh tokens, authorization codes,
+// client secrets, recovery codes) are never stored in plaintext: they are
+// hashed (argon2id for passwords, SHA-256 for high-entropy random tokens).
+// Private signing keys and TOTP secrets are encrypted with AES-256-GCM.
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "cjs"
+  importFileExtension = ""
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+enum SessionStatus {
+  PENDING_MFA
+  ACTIVE
+}
+
+enum ClientType {
+  PUBLIC
+  CONFIDENTIAL
+}
+
+enum KeyStatus {
+  ACTIVE
+  RETIRED
+}
+
+enum EmailTokenType {
+  VERIFY_EMAIL
+  RESET_PASSWORD
+}
+
+model User {
+  id               String     @id @default(uuid()) @db.Uuid
+  email            String     @unique
+  name             String
+  passwordHash     String
+  emailVerifiedAt  DateTime?
+  roles            UserRole[] @default([USER])
+  disabledAt       DateTime?
+  disabledReason   String?
+  failedLoginCount Int        @default(0)
+  lockedUntil      DateTime?
+  totpSecretEnc    String?
+  totpEnabledAt    DateTime?
+  totpLastStep     Int?
+  isProtected      Boolean    @default(false)
+  lastLoginAt      DateTime?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  sessions      Session[]
+  recoveryCodes RecoveryCode[]
+  consents      Consent[]
+  grants        Grant[]
+  clientRoles   UserClientRole[]
+  emailTokens   EmailToken[]
+  authCodes     AuthorizationCode[]
+}
+
+model RecoveryCode {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  codeHash  String
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Session {
+  id          String        @id @default(uuid()) @db.Uuid
+  tokenHash   String        @unique
+  userId      String        @db.Uuid
+  status      SessionStatus
+  amr         String[]
+  authTime    DateTime?
+  ip          String?
+  userAgent   String?
+  mfaAttempts Int           @default(0)
+  createdAt   DateTime      @default(now())
+  lastSeenAt  DateTime      @default(now())
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Client {
+  id                     String     @id @default(uuid()) @db.Uuid
+  clientId               String     @unique
+  name                   String
+  description            String?
+  logoUrl                String?
+  type                   ClientType
+  secretHash             String?
+  secretHint             String?
+  redirectUris           String[]
+  postLogoutRedirectUris String[]
+  allowedScopes          String[]
+  grantTypes             String[]
+  requireConsent         Boolean    @default(true)
+  accessTokenTtl         Int        @default(900)
+  refreshTokenTtl        Int        @default(2592000)
+  isProtected            Boolean    @default(false)
+  disabledAt             DateTime?
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
+
+  roles     ClientRole[]
+  consents  Consent[]
+  grants    Grant[]
+  authCodes AuthorizationCode[]
+}
+
+model ClientRole {
+  id          String           @id @default(uuid()) @db.Uuid
+  clientId    String           @db.Uuid
+  name        String
+  description String?
+  createdAt   DateTime         @default(now())
+  client      Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  users       UserClientRole[]
+
+  @@unique([clientId, name])
+}
+
+model UserClientRole {
+  userId       String     @db.Uuid
+  clientRoleId String     @db.Uuid
+  createdAt    DateTime   @default(now())
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientRole   ClientRole @relation(fields: [clientRoleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, clientRoleId])
+}
+
+model Scope {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  description String
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+/// Remembered consent: the scopes a user has approved for a client.
+model Consent {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  clientId  String   @db.Uuid
+  scopes    String[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, clientId])
+}
+
+/// A pending authorization request, created by /oauth/authorize and completed
+/// after the user has logged in (and consented).
+model Interaction {
+  id          String    @id
+  clientId    String    @db.Uuid
+  params      Json
+  sessionId   String?   @db.Uuid
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime
+  completedAt DateTime?
+
+  @@index([expiresAt])
+}
+
+model AuthorizationCode {
+  id                  String    @id @default(uuid()) @db.Uuid
+  codeHash            String    @unique
+  clientId            String    @db.Uuid
+  userId              String    @db.Uuid
+  sessionId           String?   @db.Uuid
+  redirectUri         String
+  scopes              String[]
+  nonce               String?
+  codeChallenge       String
+  codeChallengeMethod String
+  authTime            DateTime
+  amr                 String[]
+  expiresAt           DateTime
+  consumedAt          DateTime?
+  grantId             String?   @db.Uuid
+  createdAt           DateTime  @default(now())
+  client              Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// A grant is a "token family": every access/refresh token minted from one
+/// authorization code (or one client_credentials request) belongs to it.
+/// Revoking the grant revokes the whole family.
+model Grant {
+  id            String         @id @default(uuid()) @db.Uuid
+  clientId      String         @db.Uuid
+  userId        String?        @db.Uuid
+  sessionId     String?        @db.Uuid
+  grantType     String
+  scopes        String[]
+  authTime      DateTime?
+  amr           String[]
+  createdAt     DateTime       @default(now())
+  revokedAt     DateTime?
+  revokedReason String?
+  client        Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  user          User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokens RefreshToken[]
+  accessTokens  AccessToken[]
+
+  @@index([userId])
+  @@index([sessionId])
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  tokenHash String    @unique
+  grantId   String    @db.Uuid
+  parentId  String?   @db.Uuid
+  scopes    String[]
+  expiresAt DateTime
+  usedAt    DateTime?
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  grant     Grant     @relation(fields: [grantId], references: [id], onDelete: Cascade)
+
+  @@index([grantId])
+}
+
+/// Issued JWT access tokens are tracked by `jti` so that revocation and
+/// introspection can report them as inactive before they expire.
+model AccessToken {
+  jti       String    @id
+  grantId   String    @db.Uuid
+  scopes    String[]
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  grant     Grant     @relation(fields: [grantId], references: [id], onDelete: Cascade)
+
+  @@index([grantId])
+  @@index([expiresAt])
+}
+
+model SigningKey {
+  id            String    @id @default(uuid()) @db.Uuid
+  kid           String    @unique
+  alg           String
+  publicJwk     Json
+  privateKeyEnc String
+  status        KeyStatus
+  createdAt     DateTime  @default(now())
+  retiredAt     DateTime?
+  /// Retired keys stay in the JWKS until this instant so tokens they signed can still be verified.
+  publishUntil  DateTime?
+}
+
+model AuditEvent {
+  id         String   @id @default(uuid()) @db.Uuid
+  type       String
+  success    Boolean  @default(true)
+  actorId    String?  @db.Uuid
+  actorEmail String?
+  subjectId  String?
+  clientId   String?
+  ip         String?
+  userAgent  String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([type, createdAt])
+  @@index([actorId])
+}
+
+model EmailToken {
+  id        String         @id @default(uuid()) @db.Uuid
+  userId    String         @db.Uuid
+  type      EmailTokenType
+  tokenHash String         @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime       @default(now())
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// Development mail outbox: with MAIL_DRIVER=outbox, emails are stored here
+/// (and visible in the admin console) instead of being delivered.
+model OutboxEmail {
+  id        String   @id @default(uuid()) @db.Uuid
+  to        String
+  subject   String
+  text      String
+  html      String
+  template  String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}

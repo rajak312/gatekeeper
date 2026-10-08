@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: gatekeeper
+          POSTGRES_PASSWORD: gatekeeper
+          POSTGRES_DB: gatekeeper_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U gatekeeper -d gatekeeper_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql://gatekeeper:gatekeeper@localhost:5432/gatekeeper_test
+      NEXT_TELEMETRY_DISABLED: 1
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      # Shared dist, Prisma client and Next route types (PageProps etc.) must exist before tsc / type-aware lint.
+      - name: Generate (shared build + Prisma client)
+        run: npm run generate
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Format check
+        run: npm run format:check
+
+      # `next typegen` (part of the web typecheck script) creates the PageProps/LayoutProps globals.
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: E2E tests (real Postgres)
+        run: npm run test:e2e
+
+      - name: Build
+        env:
+          API_INTERNAL_URL: https://gatekeeper-api.onrender.com
+        run: npm run build

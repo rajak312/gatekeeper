@@ -1,0 +1,45 @@
+# Render Blueprint for the Gatekeeper API (NestJS). The web app is deployed on Vercel.
+services:
+  - type: web
+    name: gatekeeper-api
+    runtime: node
+    plan: free
+    region: oregon
+    branch: main
+    rootDir: .
+    buildCommand: npm ci --include=dev && npm run build:shared && npm run prisma:generate -w @gatekeeper/api && npm run build -w @gatekeeper/api
+    startCommand: cd apps/api && npx prisma migrate deploy && node dist/main.js
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: '24'
+      - key: NODE_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+      # Neon pooled connection string (host contains "-pooler"), e.g. ...?sslmode=require
+      - key: DATABASE_URL
+        sync: false
+      # Neon direct (non-pooled) connection string, used by `prisma migrate deploy`
+      - key: DIRECT_URL
+        sync: false
+      # Public origin of the web app, which proxies the protocol endpoints (= issuer)
+      - key: ISSUER_URL
+        value: https://gatekeeper-lalit.vercel.app
+      - key: WEB_URL
+        value: https://gatekeeper-lalit.vercel.app
+      # openssl rand -base64 48  (never change it after launch without re-keying)
+      - key: KEY_ENCRYPTION_SECRET
+        sync: false
+      - key: COOKIE_SECURE
+        value: 'true'
+      # Browser -> Vercel edge -> Render proxy -> app. Verify with the audit log IPs after deploy.
+      - key: TRUST_PROXY
+        value: '2'
+      - key: DEMO_MODE
+        value: 'true'
+      - key: SEED_ON_BOOT
+        value: 'true'
+      - key: MAIL_DRIVER
+        value: outbox

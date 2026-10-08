@@ -1,0 +1,65 @@
+name: gatekeeper
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: gatekeeper-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: gatekeeper
+      POSTGRES_PASSWORD: gatekeeper
+      POSTGRES_DB: gatekeeper
+    ports:
+      - '5435:5432'
+    volumes:
+      - gatekeeper-pg:/var/lib/postgresql/data
+      - ./docker/postgres-init.sql:/docker-entrypoint-initdb.d/10-init.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U gatekeeper -d gatekeeper']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: gatekeeper-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4500
+      DATABASE_URL: postgresql://gatekeeper:gatekeeper@postgres:5432/gatekeeper
+      DIRECT_URL: postgresql://gatekeeper:gatekeeper@postgres:5432/gatekeeper
+      ISSUER_URL: http://localhost:3500
+      WEB_URL: http://localhost:3500
+      # Same local-only secret as apps/api/.env.example so compose and `npm run dev:api` can share the DB.
+      # Generate your own for any real deployment: `openssl rand -base64 48`
+      KEY_ENCRYPTION_SECRET: dev-only-key-encryption-secret-please-change-0123456789
+      COOKIE_SECURE: 'false'
+      TRUST_PROXY: '1'
+      DEMO_MODE: 'true'
+      SEED_ON_BOOT: 'true'
+    ports:
+      - '4500:4500'
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        API_INTERNAL_URL: http://api:4500
+    container_name: gatekeeper-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      NODE_ENV: production
+    ports:
+      - '3500:3500'
+
+volumes:
+  gatekeeper-pg:
