@@ -6,7 +6,7 @@
 
 **[Live demo](https://gatekeeper-lalit.vercel.app)** · [OAuth playground](https://gatekeeper-lalit.vercel.app/playground) · [Admin console](https://gatekeeper-lalit.vercel.app/admin) · [API reference](https://gatekeeper-lalit.vercel.app/docs)
 
-[![CI](https://github.com/rajak312/gatekeeper/actions/workflows/ci.yml/badge.svg)](https://github.com/rajak312/gatekeeper/actions/workflows/ci.yml)
+[![CI](https://github.com/lalitkumarrajak/gatekeeper/actions/workflows/ci.yml/badge.svg)](https://github.com/lalitkumarrajak/gatekeeper/actions/workflows/ci.yml)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 

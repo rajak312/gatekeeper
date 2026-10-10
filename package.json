@@ -4,7 +4,7 @@
   "private": true,
   "description": "Gatekeeper \u2014 an OAuth 2.1 / OpenID Connect identity provider built with NestJS and Next.js",
   "license": "MIT",
-  "author": "Lalit Rajak (https://github.com/rajak312)",
+  "author": "Lalit Rajak (https://github.com/lalitkumarrajak)",
   "workspaces": [
     "packages/*",
     "apps/*"

@@ -159,7 +159,7 @@ export default function Home() {
       </main>
       <footer className="border-t border-border py-8 text-center text-xs text-subtle">
         Built by{' '}
-        <a href="https://github.com/rajak312" className="font-medium text-muted hover:text-fg">
+        <a href="https://github.com/lalitkumarrajak" className="font-medium text-muted hover:text-fg">
           Lalit Rajak
         </a>{' '}
         · NestJS · Next.js · Prisma · PostgreSQL

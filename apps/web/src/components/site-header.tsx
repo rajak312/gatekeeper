@@ -7,7 +7,7 @@ import { useMe } from '@/lib/hooks';
 import { Logo } from './logo';
 import { ThemeToggle } from './theme-toggle';
 
-const GITHUB = process.env.NEXT_PUBLIC_GITHUB_URL ?? 'https://github.com/rajak312/gatekeeper';
+const GITHUB = process.env.NEXT_PUBLIC_GITHUB_URL ?? 'https://github.com/lalitkumarrajak/gatekeeper';
 
 export function SiteHeader() {
   const pathname = usePathname();
